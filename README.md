@@ -9,13 +9,13 @@ automatically and survives theme switches.
 ## Install
 
 ```bash
-omarchy plugin add https://github.com/<your-username>/omarchy-apple-dock.git --enable
+omarchy plugin add https://github.com/randomchaos7800-hub/omarchy-apple-dock.git --enable
 ```
 
 Or manually:
 
 ```bash
-git clone https://github.com/<your-username>/omarchy-apple-dock.git ~/.config/omarchy/plugins/dino.dock
+git clone https://github.com/randomchaos7800-hub/omarchy-apple-dock.git ~/.config/omarchy/plugins/dino.dock
 omarchy plugin enable dino.dock
 ```
 
