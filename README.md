@@ -72,7 +72,8 @@ To update later: `omarchy plugin update dino.dock`.
 | **Click** a pinned app | Focuses its window (switching workspaces if needed), or launches it if it isn't running |
 | **Click** a running app again | Cycles to that app's next window |
 | **Click** an unpinned running app | Focuses it — same as a pinned one |
-| **Right-click** any icon | Menu: *New Window* · window jump list · *Quit* · *Pin / Unpin* |
+| **Right-click** any icon | Menu: *New Window* · window jump list · *Quit* · *Pin / Unpin* · *Dock Settings…* |
+| **Right-click** the dock background | Menu: *Dock Settings…* |
 | **Click a title** in the jump list | Focuses exactly that window, wherever it is |
 | **Quit** | Closes every window of that app (via the window-management protocol — the app can still prompt to save) |
 | **Drag** a pinned icon left/right | Reorders it; an accent bar previews where it will land |
@@ -155,19 +156,44 @@ file, or an empty one, means no preference.
 
 ### Settings — `dino.dock.settings.json`
 
-One knob today:
+The usual way to change these is **right-click the dock → Dock Settings…**.
+The panel writes this file (and the pin / monitor files) as you go; it
+hot-reloads on save, so a hand-edit works too.
 
 ```json
-{ "autohide": false }
+{
+  "dockEnabled": true,
+  "autohide": false,
+  "autohideDelay": 700,
+  "overlayMode": true,
+  "iconSize": 50,
+  "minIconSize": 32,
+  "iconGap": 10,
+  "paddingX": 24,
+  "paddingY": 8,
+  "edgeMargin": 10,
+  "maxWidthPercent": 86,
+  "windowGap": 2,
+  "magnify": true,
+  "magnifyStrength": 85,
+  "magnifyRadius": 210,
+  "launchBounce": true,
+  "showRunningApps": true,
+  "showBadges": true,
+  "showTooltips": true,
+  "glassmorphism": true,
+  "backgroundOpacity": 52,
+  "borderWidth": 2,
+  "borderOpacity": 100,
+  "sheen": true,
+  "capsule": false
+}
 ```
 
-`autohide` defaults to **true**: the dock hides about 0.7s after the
-pointer leaves it and reveals when the pointer touches the bottom screen
-edge. While auto-hide is on, a 2-pixel strip along the very bottom of
-the screen is reserved to catch the reveal — the standard hidden-taskbar
-trade-off. An open right-click menu or an in-flight drag always holds
-the dock on screen. Set `autohide` to `false` for a dock that's always
-visible.
+`autohide` defaults to **false** (always visible). Set it to `true` to
+hide about `autohideDelay` ms after the pointer leaves, and reveal from
+the bottom screen edge. An open right-click menu, an in-flight drag, or
+the settings panel always holds the dock on screen.
 
 ## Design notes
 
@@ -260,8 +286,10 @@ or manually: delete the plugin directory and remove the
   right-click and drag; hand-editable).
 - `~/.config/omarchy/dino.dock.monitor.json` — optional monitor
   targeting.
-- `~/.config/omarchy/dino.dock.settings.json` — optional settings
-  (currently `autohide`).
+- `SettingsPanel.qml` — GUI for every dock setting, opened from the
+  right-click menu.
+- `~/.config/omarchy/dino.dock.settings.json` — look, size, feel, and
+  visibility (also written by the settings panel).
 
 ## License
 
