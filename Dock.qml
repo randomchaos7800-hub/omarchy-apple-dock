@@ -128,28 +128,203 @@ Item {
   // ------------------------------------------------------------ settings
 
   // Same out-of-plugin-dir rule as the pin file (the registry reload
-  // problem). Currently one knob: {"autohide": false} to keep the dock
-  // always visible.
+  // problem). The settings panel and any hand-edit of this JSON both
+  // write here; FileView watches it so they stay in sync.
   readonly property string settingsPath: (Quickshell.env("HOME") || "") + "/.config/omarchy/dino.dock.settings.json"
-  property bool autohide: true
+  property bool settingsOpen: false
+
+  property bool dockEnabled: true
+  property bool autohide: false
+  property int autohideDelay: 700
+  property bool overlayMode: true
+  property int iconSize: 50
+  property int minIconSize: 32
+  property int iconGap: 10
+  property int paddingX: 24
+  property int paddingY: 8
+  property int edgeMargin: 10
+  property int maxWidthPercent: 86
+  property bool magnify: true
+  property int magnifyStrength: 85
+  property int magnifyRadius: 210
+  property bool launchBounce: true
+  property bool showRunningApps: true
+  property bool showBadges: true
+  property bool showTooltips: true
+  property bool glassmorphism: true
+  property int backgroundOpacity: 52
+  property int borderOpacity: 100
+  property int borderWidth: 2
+  property int windowGap: 2
+  property bool sheen: true
+  property bool capsule: false
+
+  function defaultSettings() {
+    return {
+      dockEnabled: true,
+      autohide: false,
+      autohideDelay: 700,
+      overlayMode: true,
+      iconSize: 50,
+      minIconSize: 32,
+      iconGap: 10,
+      paddingX: 24,
+      paddingY: 8,
+      edgeMargin: 10,
+      maxWidthPercent: 86,
+      magnify: true,
+      magnifyStrength: 85,
+      magnifyRadius: 210,
+      launchBounce: true,
+      showRunningApps: true,
+      showBadges: true,
+      showTooltips: true,
+      glassmorphism: true,
+      backgroundOpacity: 52,
+      borderOpacity: 100,
+      borderWidth: 2,
+      windowGap: 2,
+      sheen: true,
+      capsule: false
+    }
+  }
+
+  function clampInt(value, fallback, min, max) {
+    var n = parseInt(value, 10)
+    if (!isFinite(n)) n = fallback
+    if (min !== undefined) n = Math.max(min, n)
+    if (max !== undefined) n = Math.min(max, n)
+    return n
+  }
+
+  function clampBool(value, fallback) {
+    return typeof value === "boolean" ? value : fallback
+  }
+
+  function settingsObject() {
+    return {
+      dockEnabled: root.dockEnabled,
+      autohide: root.autohide,
+      autohideDelay: root.autohideDelay,
+      overlayMode: root.overlayMode,
+      iconSize: root.iconSize,
+      minIconSize: root.minIconSize,
+      iconGap: root.iconGap,
+      paddingX: root.paddingX,
+      paddingY: root.paddingY,
+      edgeMargin: root.edgeMargin,
+      maxWidthPercent: root.maxWidthPercent,
+      magnify: root.magnify,
+      magnifyStrength: root.magnifyStrength,
+      magnifyRadius: root.magnifyRadius,
+      launchBounce: root.launchBounce,
+      showRunningApps: root.showRunningApps,
+      showBadges: root.showBadges,
+      showTooltips: root.showTooltips,
+      glassmorphism: root.glassmorphism,
+      backgroundOpacity: root.backgroundOpacity,
+      borderOpacity: root.borderOpacity,
+      borderWidth: root.borderWidth,
+      windowGap: root.windowGap,
+      sheen: root.sheen,
+      capsule: root.capsule
+    }
+  }
+
+  function applySettingsObject(parsed) {
+    var d = root.defaultSettings()
+    var p = (parsed && typeof parsed === "object") ? parsed : {}
+    // Leftover keys from the older rosakodu dock JSON.
+    if (typeof p.autohide !== "boolean" && typeof p.visibilityMode === "string")
+      p.autohide = p.visibilityMode !== "always"
+    if (typeof p.backgroundOpacity !== "number" && typeof p.blurOpacity === "number")
+      p.backgroundOpacity = Math.round(Number(p.blurOpacity) * 100)
+    root.dockEnabled = root.clampBool(p.dockEnabled, d.dockEnabled)
+    root.autohide = root.clampBool(p.autohide, d.autohide)
+    root.autohideDelay = root.clampInt(p.autohideDelay, d.autohideDelay, 100, 5000)
+    root.overlayMode = root.clampBool(p.overlayMode, d.overlayMode)
+    root.iconSize = root.clampInt(p.iconSize, d.iconSize, 16, 128)
+    root.minIconSize = root.clampInt(p.minIconSize, d.minIconSize, 12, 96)
+    root.iconGap = root.clampInt(p.iconGap, d.iconGap, 0, 48)
+    root.paddingX = root.clampInt(p.paddingX, d.paddingX, 0, 64)
+    root.paddingY = root.clampInt(p.paddingY, d.paddingY, 0, 48)
+    root.edgeMargin = root.clampInt(p.edgeMargin, d.edgeMargin, 0, 64)
+    root.maxWidthPercent = root.clampInt(p.maxWidthPercent, d.maxWidthPercent, 40, 100)
+    root.magnify = root.clampBool(p.magnify, d.magnify)
+    root.magnifyStrength = root.clampInt(p.magnifyStrength, d.magnifyStrength, 0, 200)
+    root.magnifyRadius = root.clampInt(p.magnifyRadius, d.magnifyRadius, 50, 500)
+    root.launchBounce = root.clampBool(p.launchBounce, d.launchBounce)
+    root.showRunningApps = root.clampBool(p.showRunningApps, d.showRunningApps)
+    root.showBadges = root.clampBool(p.showBadges, d.showBadges)
+    root.showTooltips = root.clampBool(p.showTooltips, d.showTooltips)
+    root.glassmorphism = root.clampBool(p.glassmorphism, d.glassmorphism)
+    root.backgroundOpacity = root.clampInt(p.backgroundOpacity, d.backgroundOpacity, 10, 100)
+    root.borderOpacity = root.clampInt(p.borderOpacity, d.borderOpacity, 0, 100)
+    root.borderWidth = root.clampInt(p.borderWidth, d.borderWidth, 0, 8)
+    root.windowGap = root.clampInt(p.windowGap, d.windowGap, 0, 24)
+    root.sheen = root.clampBool(p.sheen, d.sheen)
+    root.capsule = root.clampBool(p.capsule, d.capsule)
+  }
 
   function loadSettings(rawText) {
-    var v = true
+    var text = String(rawText || "").trim()
+    var parsed = null
+    if (text.length > 0) {
+      try { parsed = JSON.parse(text) } catch (e) {
+        console.warn("dino.dock: settings.json parse failed:", e)
+      }
+    }
+    root.applySettingsObject(parsed)
+  }
+
+  function writeSettings() {
+    var text = JSON.stringify(root.settingsObject(), null, 2) + "\n"
     try {
-      var parsed = JSON.parse(String(rawText || ""))
-      if (parsed && typeof parsed.autohide === "boolean") v = parsed.autohide
-    } catch (e) {}
-    root.autohide = v
+      settingsFile.setText(text)
+    } catch (e) {
+      console.warn("dino.dock: settings.json write failed:", e)
+    }
+  }
+
+  function setSetting(key, value) {
+    var next = root.settingsObject()
+    if (!(key in next)) return
+    next[key] = value
+    root.applySettingsObject(next)
+    settingsSaveTimer.restart()
+  }
+
+  function resetSettings() {
+    root.applySettingsObject(root.defaultSettings())
+    root.writeSettings()
+  }
+
+  function openSettings() {
+    dockCard.menuData = null
+    root.settingsOpen = true
+    if (settingsLoader.item) settingsLoader.item.open = true
+  }
+
+  function closeSettings() {
+    root.settingsOpen = false
+    if (settingsLoader.item) settingsLoader.item.open = false
   }
 
   FileView {
     id: settingsFile
     path: root.settingsPath
     watchChanges: true
+    atomicWrites: true
     printErrors: false
     onLoaded: root.loadSettings(text())
     onFileChanged: reload()
     onLoadFailed: root.loadSettings("")
+  }
+
+  Timer {
+    id: settingsSaveTimer
+    interval: 140
+    onTriggered: root.writeSettings()
   }
 
   // Auto-hide state. The dock slides below the screen edge when nothing
@@ -158,6 +333,7 @@ Item {
   // of the screen — the macOS/taskbar autohide contract.
   property bool dockHidden: false
   onAutohideChanged: if (!autohide) dockHidden = false
+  onDockEnabledChanged: if (dockEnabled) dockHidden = false
 
   function rebuildEntryIndex() {
     var idx = {}
@@ -356,7 +532,7 @@ Item {
   // row the dock renders.
   readonly property var dockModel: {
     var out = root.resolvedPins.slice()
-    if (root.runningExtras.length > 0) {
+    if (root.showRunningApps && root.runningExtras.length > 0) {
       out.push({ isSeparator: true })
       out = out.concat(root.runningExtras)
     }
@@ -408,10 +584,24 @@ Item {
     root.loadMonitorMatch(root.monitorFileExists ? root.monitorRaw : root.legacyMonitorRaw)
   }
 
+  function writeMonitor(match) {
+    var value = String(match || "").trim()
+    var text = JSON.stringify(value) + "\n"
+    root.monitorRaw = text
+    root.monitorFileExists = true
+    root.monitorMatch = value.toLowerCase()
+    try {
+      monitorFile.setText(text)
+    } catch (e) {
+      console.warn("dino.dock: monitor.json write failed:", e)
+    }
+  }
+
   FileView {
     id: monitorFile
     path: root.monitorPath
     watchChanges: true
+    atomicWrites: true
     printErrors: false
     onLoaded: { root.monitorRaw = text(); root.monitorFileExists = true; root.applyMonitor() }
     onFileChanged: reload()
@@ -446,44 +636,72 @@ Item {
 
   // ------------------------------------------------------------ the dock UI
 
+  readonly property bool floatingDock: root.overlayMode || root.autohide
+
   PanelWindow {
     id: panel
     visible: true
     screen: root.targetScreen
-    anchors { top: true; bottom: true; left: true; right: true }
+    anchors {
+      top: root.floatingDock
+      bottom: true
+      left: true
+      right: true
+    }
+    // Window is tall enough to paint magnified icons and the menu.
+    // Hyprland still applies gaps_out above an exclusive zone, so subtract
+    // that here or windows sit a full gap away from the dock.
+    readonly property int hyprGapsOut: Math.max(0, Style.gapsOut * 2)
+    readonly property int reservedStrip: Math.max(0, Math.round(
+      dockCard.cardHeight + dockCard.restMargin + root.windowGap - hyprGapsOut))
+    implicitHeight: root.floatingDock ? 0 : Math.max(reservedStrip, Math.round(dockCard.height + dockCard.restMargin))
     color: "transparent"
     WlrLayershell.namespace: "omarchy-dock"
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-    exclusionMode: ExclusionMode.Ignore
+    exclusionMode: (root.floatingDock || root.dockHidden) ? ExclusionMode.Ignore : ExclusionMode.Normal
+    exclusiveZone: (root.floatingDock || root.dockHidden) ? 0 : reservedStrip
     // Only the dock card (plus the context menu when open) accepts input;
     // the rest of this full-screen surface stays click-through so it never
     // blocks the desktop underneath, exactly like the notifications/OSD
     // overlays. A long window-list menu can extend above dockCard's
     // bounds, so the mask is a computed rect that grows upward with it —
     // one flat region, no nested-Region semantics to trip over.
-    readonly property int maskTopOverflow: contextMenu.visible ? Math.max(0, -contextMenu.y) : 0
-    // Extends from the (possibly menu-raised) top of the dock down to the
-    // physical screen edge, so a pointer parked at the very bottom still
-    // counts as "at the dock" and autohide doesn't oscillate. Collapses to
-    // nothing while hidden — a hidden dock must not eat clicks.
+    // The capsule only. Headroom above it is visual (magnify/bounce) and
+    // must NOT steal hover while the pointer is over the desktop — that
+    // made icons grow, titles flicker, and the right-click menu collapse
+    // before a click landed. Expand the mask only while the pointer is
+    // actually on the dock, a magnified icon, or the open menu.
+    readonly property int pillTop: dockCard.y + dockCard.height - dockCard.cardHeight
+    readonly property bool dockHot: hoverArea.containsMouse
+      || dockCard.iconHoverCount > 0
+      || dockCard.dragIndex >= 0
+      || dockCard.menuData !== null
+    readonly property int maskTop: {
+      if (root.dockHidden) return 0
+      if (contextMenu.visible)
+        return Math.min(panel.pillTop, dockCard.y + contextMenu.y)
+      if (panel.dockHot) return dockCard.y
+      return panel.pillTop
+    }
     mask: Region {
       x: dockCard.x
-      y: root.dockHidden ? 0 : dockCard.y - panel.maskTopOverflow
+      y: panel.maskTop
       width: root.dockHidden ? 0 : dockCard.width
-      height: root.dockHidden ? 0 : panel.height - dockCard.y + panel.maskTopOverflow
+      height: root.dockHidden ? 0 : panel.height - panel.maskTop
     }
 
     // What keeps the dock on screen: pointer anywhere over/under the card
     // (nearMa spans to the screen edge), the menu, or an in-flight drag —
     // or autohide being off. Losing all of them starts the hide timer.
     readonly property bool dockWanted: !root.autohide
-      || nearMa.containsMouse || menuHover.containsMouse || edgeMa.containsMouse
+      || root.settingsOpen
+      || nearMa.containsMouse || menuHover.hovered || edgeMa.containsMouse
       || dockCard.menuData !== null || dockCard.dragIndex >= 0
     onDockWantedChanged: if (dockWanted) root.dockHidden = false
 
     Timer {
-      interval: 700
+      interval: Math.max(100, root.autohideDelay)
       running: root.autohide && !panel.dockWanted && !root.dockHidden
       onTriggered: root.dockHidden = true
     }
@@ -504,7 +722,7 @@ Item {
       id: dockCard
       anchors.horizontalCenter: parent.horizontalCenter
       anchors.bottom: parent.bottom
-      readonly property int restMargin: Math.max(Style.space(10), Style.gapsOut)
+      readonly property int restMargin: Style.space(root.edgeMargin)
       anchors.bottomMargin: root.dockHidden
         ? -(cardHeight + restMargin + Style.space(6))
         : restMargin
@@ -514,19 +732,21 @@ Item {
       width: cardWidth
       height: cardHeight + headroom
 
-      readonly property int maxIconSize: Style.space(50)
-      readonly property int minIconSize: Style.space(32)
-      readonly property int iconGap: Style.space(10)
+      readonly property int maxIconSize: Style.space(root.iconSize)
+      readonly property int minIconSize: Style.space(root.minIconSize)
+      readonly property int iconGap: Style.space(root.iconGap)
       // Wide enough that the endmost icons clear the capsule's curved ends.
-      readonly property int padX: Style.space(24)
-      readonly property int padY: Style.space(8)
-      readonly property bool hasSeparator: root.runningExtras.length > 0
+      readonly property int padX: Style.space(root.paddingX)
+      readonly property int padY: Style.space(root.paddingY)
+      readonly property bool hasSeparator: root.dockEnabled && root.showRunningApps && root.runningExtras.length > 0
       readonly property int sepWidth: Style.space(2)
       // Icon slots (pins + running extras); the separator is its own thin
       // slot that takes sepWidth instead of iconSize.
-      readonly property int iconCount: Math.max(1, root.dockModel.length - (hasSeparator ? 1 : 0))
+      readonly property int iconCount: root.dockEnabled
+        ? Math.max(1, root.dockModel.length - (hasSeparator ? 1 : 0))
+        : 1
       readonly property int slotCount: iconCount + (hasSeparator ? 1 : 0)
-      readonly property real availableWidth: panel.screenWidth * 0.86
+      readonly property real availableWidth: panel.screenWidth * (root.maxWidthPercent / 100)
 
       // Grow wider up to ~86% of screen width; past that, shrink icons to
       // fit — the same trade-off the real macOS dock makes.
@@ -536,14 +756,16 @@ Item {
         ? maxIconSize
         : Math.max(minIconSize, Math.floor((availableWidth - fixedWidth) / iconCount))
 
-      readonly property int cardWidth: root.dockModel.length > 0
+      readonly property int cardWidth: (root.dockEnabled && root.dockModel.length > 0)
         ? (iconSize * iconCount + fixedWidth)
         : (maxIconSize + padX * 2)
       readonly property int cardHeight: iconSize + padY * 2
       // Extra vertical room above the pill so magnified/bouncing icons have
       // somewhere to rise into — and so the click-mask (sized to this whole
       // item) still covers them while they're up there.
-      readonly property int headroom: Math.round(iconSize * (magStrength + 0.35))
+      readonly property int tooltipRoom: root.showTooltips
+        ? (Style.font.bodySmall + Style.space(16)) : 0
+      readonly property int headroom: Math.round(iconSize * (magStrength + 0.35)) + tooltipRoom
 
       // ---- right-click pin menu ----
       property var menuData: null // modelData of the icon the menu is open for
@@ -575,10 +797,19 @@ Item {
 
       // ---- hover magnification ----
       property real hoverX: -100000
-      readonly property real magRadius: iconSize * 2.1
-      readonly property real magStrength: 0.85
+      property int iconHoverCount: 0
+      readonly property real magRadius: iconSize * (root.magnifyRadius / 100)
+      readonly property real magStrength: root.magnifyStrength / 100
+
+      function clearHoverIfIdle() {
+        if (dockCard.menuData !== null) return
+        if (hoverArea.containsMouse || dockCard.iconHoverCount > 0 || dockCard.dragIndex >= 0)
+          return
+        dockCard.hoverX = -100000
+      }
 
       function scaleFor(centerX) {
+        if (!root.magnify || root.magnifyStrength <= 0) return 1.0
         if (dockCard.hoverX < -99999) return 1.0
         var d = Math.abs(centerX - dockCard.hoverX)
         if (d >= dockCard.magRadius) return 1.0
@@ -597,8 +828,8 @@ Item {
         // read as a boxy web panel: window edges behind bled through the
         // translucency as seams, and the bright border boxed it in. macOS
         // docks are a soft capsule with a border you barely register.
-        radius: Math.round(height / 2)
-        borderSpec: Border.flat(Util.alpha(Color.popups.border, 0.35), 1)
+        radius: root.capsule ? Math.round(height / 2) : Style.cornerRadius
+        borderSpec: Border.flat(Util.alpha(Color.accent, root.borderOpacity / 100), root.borderWidth)
         // Vertical glass sheen: catches light at the top, settles darker at
         // the base. Derived from the theme background so it follows theme
         // switches instead of hardcoding a palette. On light themes the
@@ -606,10 +837,21 @@ Item {
         // already-light background just washes the capsule to white
         // (review finding).
         readonly property bool lightTheme: Color.popups.background.hslLightness > 0.5
+        readonly property real fillAlpha: root.backgroundOpacity / 100
         gradient: Gradient {
-          GradientStop { position: 0.0; color: Util.alpha(Qt.lighter(Color.popups.background, cardBg.lightTheme ? 1.06 : 2.1), 0.97) }
-          GradientStop { position: 0.45; color: Util.alpha(Color.popups.background, 0.97) }
-          GradientStop { position: 1.0; color: Util.alpha(Qt.darker(Color.popups.background, cardBg.lightTheme ? 1.10 : 1.5), 0.98) }
+          GradientStop {
+            position: 0.0
+            color: Util.alpha(root.glassmorphism
+              ? Qt.lighter(Color.popups.background, cardBg.lightTheme ? 1.06 : 2.1)
+              : Color.popups.background, cardBg.fillAlpha)
+          }
+          GradientStop { position: 0.45; color: Util.alpha(Color.popups.background, cardBg.fillAlpha) }
+          GradientStop {
+            position: 1.0
+            color: Util.alpha(root.glassmorphism
+              ? Qt.darker(Color.popups.background, cardBg.lightTheme ? 1.10 : 1.5)
+              : Color.popups.background, Math.min(1, cardBg.fillAlpha + 0.01))
+          }
         }
 
         // Additive white sheen over the top half — the base color is dark
@@ -619,6 +861,7 @@ Item {
         Rectangle {
           anchors.fill: parent
           radius: parent.radius
+          visible: root.sheen
           gradient: Gradient {
             GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, cardBg.lightTheme ? 0.05 : 0.16) }
             GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, cardBg.lightTheme ? 0.01 : 0.02) }
@@ -629,24 +872,57 @@ Item {
 
       MouseArea {
         id: hoverArea
-        anchors.fill: parent
+        // Only the visible capsule. Filling dockCard (which includes
+        // headroom) captured hover in the empty air above the dock.
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: dockCard.cardHeight
+        z: 0
         hoverEnabled: true
-        acceptedButtons: Qt.NoButton
+        acceptedButtons: Qt.RightButton
+        onEntered: menuCloseTimer.stop()
         onPositionChanged: dockCard.hoverX = mouseX
+        onClicked: function(mouse) {
+          if (mouse.button !== Qt.RightButton) return
+          dockCard.menuX = mouse.x
+          dockCard.menuData = { isDock: true }
+          menuCloseTimer.stop()
+        }
         onExited: {
-          dockCard.hoverX = -100000
-          menuCloseTimer.restart()
+          if (dockCard.menuData !== null) menuCloseTimer.restart()
+          else dockCard.clearHoverIfIdle()
+        }
+      }
+
+      MouseArea {
+        visible: !root.dockEnabled
+        width: dockCard.iconSize
+        height: dockCard.iconSize
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: dockCard.padY
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.openSettings()
+        onPressAndHold: root.openSettings()
+
+        Text {
+          anchors.centerIn: parent
+          text: "⚙"
+          color: Color.popups.text
+          font.pixelSize: Math.round(dockCard.iconSize * 0.55)
         }
       }
 
       Row {
         id: iconRow
+        z: 1
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         spacing: dockCard.iconGap
 
         Repeater {
-          model: root.dockModel
+          model: root.dockEnabled ? root.dockModel : []
 
           delegate: Item {
             id: slot
@@ -654,7 +930,7 @@ Item {
             required property int index
             readonly property bool isSep: slot.modelData.isSeparator === true
             width: slot.isSep ? dockCard.sepWidth : dockCard.iconSize
-            height: dockCard.height
+            height: dockCard.cardHeight
 
             readonly property real slotCenterX: iconRow.x + slot.x + width / 2
             readonly property real targetScale: slot.isSep ? 1.0 : dockCard.scaleFor(slotCenterX)
@@ -679,7 +955,7 @@ Item {
 
             Rectangle {
               id: dot
-              visible: slot.isRunning
+              visible: slot.isRunning && root.showBadges
               width: Style.space(5)
               height: Style.space(5)
               radius: width / 2
@@ -694,8 +970,8 @@ Item {
               visible: !slot.isSep
               width: slot.isSep ? 0 : dockCard.iconSize
               height: dockCard.iconSize
-              radius: Style.space(12)
-              color: slot.hovered ? Style.hoverFill : "transparent"
+              radius: root.capsule ? Style.space(12) : Style.cornerRadius
+              color: "transparent"
               anchors.horizontalCenter: parent.horizontalCenter
               // Anchored to the pill's own bottom (padY in from the edge),
               // not to the running-indicator dot below it — dot is a
@@ -793,7 +1069,7 @@ Item {
               Rectangle {
                 id: iconMask
                 anchors.fill: icon
-                radius: Style.space(9)
+                radius: root.capsule ? Style.space(9) : Style.cornerRadius
                 visible: false
                 layer.enabled: true
               }
@@ -820,8 +1096,17 @@ Item {
               hoverEnabled: true
               acceptedButtons: Qt.LeftButton | Qt.RightButton
               cursorShape: Qt.PointingHandCursor
-              onEntered: slot.hovered = true
-              onExited: slot.hovered = false
+              onEntered: {
+                slot.hovered = true
+                dockCard.iconHoverCount += 1
+                menuCloseTimer.stop()
+              }
+              onExited: {
+                slot.hovered = false
+                dockCard.iconHoverCount = Math.max(0, dockCard.iconHoverCount - 1)
+                if (dockCard.menuData !== null) menuCloseTimer.restart()
+                else dockCard.clearHoverIfIdle()
+              }
 
               // Drag-to-reorder: pins only. A left-press that travels more
               // than half an icon horizontally becomes a drag; release
@@ -838,6 +1123,7 @@ Item {
                 }
               }
               onPositionChanged: mouse => {
+                dockCard.hoverX = slotMa.mapToItem(dockCard, mouse.x, 0).x
                 if (!pressed || !draggable) return
                 if (!didDrag && Math.abs(mouse.x - pressX) > dockCard.iconSize * 0.5) {
                   didDrag = true
@@ -871,13 +1157,14 @@ Item {
                   } else {
                     dockCard.menuX = slot.slotCenterX
                     dockCard.menuData = slot.modelData
+                    menuCloseTimer.stop()
                   }
                   return
                 }
                 dockCard.menuData = null
                 // Bounce is a "launching" cue — focusing an already-running
                 // window just switches to it, no theatrics (macOS again).
-                if (!slot.isRunning) bounceAnim.start()
+                if (!slot.isRunning && root.launchBounce) bounceAnim.start()
                 root.launchOrFocus(slot.modelData, slot.runningToplevels)
               }
             }
@@ -887,15 +1174,18 @@ Item {
               visible: opacity > 0
               // Suppressed while the pin menu is up — they occupy the same
               // spot above the icon.
-              opacity: (slot.hovered && dockCard.menuData === null) ? 1 : 0
+              opacity: (root.showTooltips && slot.hovered && dockCard.menuData === null) ? 1 : 0
               Behavior on opacity { NumberAnimation { duration: 120 } }
               radius: Style.space(6)
               color: Util.alpha(Color.tooltip.background, 0.95)
               width: tooltipLabel.implicitWidth + Style.space(16)
               height: tooltipLabel.implicitHeight + Style.space(8)
               anchors.horizontalCenter: tile.horizontalCenter
-              anchors.bottom: tile.top
-              anchors.bottomMargin: Style.space(10) + dockCard.iconSize * (slot.targetScale - 1)
+              // Sit just above the scaled icon. tile.top is unscaled;
+              // extra (scale-1)*iconSize matches transformOrigin: Bottom.
+              // A larger gap plus that term used to park titles in the
+              // headroom where the layer clipped them.
+              y: tile.y - height - Style.space(4) - dockCard.iconSize * (slot.targetScale - 1)
 
               Text {
                 id: tooltipLabel
@@ -926,6 +1216,10 @@ Item {
           var d = dockCard.menuData
           if (d === null) return []
           var rows = []
+          if (d.isDock === true) {
+            rows.push({ kind: "settings", label: "Dock Settings…" })
+            return rows
+          }
           var tls = (d.isExtra === true)
             ? (root.runningAppIds[d.key] || [])
             : (root.toplevelsFor(d) || [])
@@ -947,6 +1241,8 @@ Item {
           } else {
             rows.push({ kind: "unpin", label: "Unpin from Dock" })
           }
+          rows.push({ kind: "sep" })
+          rows.push({ kind: "settings", label: "Dock Settings…" })
           return rows
         }
 
@@ -954,7 +1250,9 @@ Item {
           var d = dockCard.menuData
           dockCard.menuData = null
           if (d === null || !row) return
-          if (row.kind === "window") {
+          if (row.kind === "settings") {
+            root.openSettings()
+          } else if (row.kind === "window") {
             if (row.tl && typeof row.tl.activate === "function") row.tl.activate()
           } else if (row.kind === "launch") {
             var id = d.isExtra === true ? (d.entry ? d.entry.id : "") : d.id
@@ -997,7 +1295,7 @@ Item {
 
         visible: dockCard.menuData !== null && menuRows.length > 0
         z: 100
-        radius: Style.space(8)
+        radius: Style.cornerRadius
         color: Util.alpha(Color.popups.background, 0.98)
         border.color: Util.alpha(Color.popups.border, 0.5)
         border.width: 1
@@ -1007,14 +1305,18 @@ Item {
         // Clamped so a long jump list can't run off the top of the screen
         // (dockCard.y is the distance to the screen top in these coords).
         y: Math.max(Style.space(4) - dockCard.y,
-                    dockCard.height - dockCard.cardHeight - height - Style.space(8))
+                    dockCard.height - dockCard.cardHeight - height + Style.space(4))
 
-        MouseArea {
+        // HoverHandler stays hovered while the pointer is over child
+        // rows. A MouseArea here with acceptedButtons: NoButton lost
+        // containsMouse the moment a row's MouseArea took the hover,
+        // which closed the menu before a click could land.
+        HoverHandler {
           id: menuHover
-          anchors.fill: parent
-          hoverEnabled: true
-          acceptedButtons: Qt.NoButton
-          onExited: menuCloseTimer.restart()
+          onHoveredChanged: {
+            if (hovered) menuCloseTimer.stop()
+            else menuCloseTimer.restart()
+          }
         }
 
         Column {
@@ -1043,7 +1345,7 @@ Item {
               Rectangle {
                 visible: !menuRow.isSep
                 anchors.fill: parent
-                radius: Style.space(6)
+                radius: Style.cornerRadius
                 color: rowMa.containsMouse ? Style.hoverFill : "transparent"
               }
 
@@ -1065,6 +1367,7 @@ Item {
                 enabled: !menuRow.isSep
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
+                onEntered: menuCloseTimer.stop()
                 onClicked: contextMenu.doAction(menuRow.modelData)
               }
             }
@@ -1089,9 +1392,12 @@ Item {
       // menu vanishing mid-flight.
       Timer {
         id: menuCloseTimer
-        interval: 300
+        interval: 450
         onTriggered: {
-          if (!hoverArea.containsMouse && !menuHover.containsMouse) dockCard.menuData = null
+          if (hoverArea.containsMouse || dockCard.iconHoverCount > 0 || menuHover.hovered)
+            return
+          dockCard.menuData = null
+          dockCard.clearHoverIfIdle()
         }
       }
     }
@@ -1121,6 +1427,28 @@ Item {
       anchors.fill: parent
       hoverEnabled: true
       acceptedButtons: Qt.NoButton
+    }
+  }
+
+  IpcHandler {
+    target: "dino.dock"
+    function settings(): void { root.openSettings() }
+    function closeSettings(): void { root.closeSettings() }
+  }
+
+  Loader {
+    id: settingsLoader
+    active: true
+    source: Qt.resolvedUrl("SettingsPanel.qml")
+    onLoaded: {
+      if (!item) return
+      item.dock = root
+      item.open = Qt.binding(function() { return root.settingsOpen })
+      item.requestClose.connect(root.closeSettings)
+    }
+    onStatusChanged: {
+      if (status === Loader.Error)
+        console.warn("dino.dock: SettingsPanel failed:", errorString ? errorString() : sourceComponent.errorString())
     }
   }
 }
